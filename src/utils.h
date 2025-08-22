@@ -212,7 +212,7 @@ Eigen::SparseMatrix<Type> Q_spde(spde_barrier_t<Type> spde, Type kappa,
   Eigen::SparseMatrix<Type> A = spde.I;
   A = A + (pow(range(0), 2) / 8) * spde.D0 + (pow(range(1), 2) / 8) * spde.D1;
 
-  Eigen::SparseMatrix<Type> Q = A.transpose() * Cinv * A / M_PI * 2 * 3;
+  Eigen::SparseMatrix<Type> Q = A.transpose() * Cinv * A / M_PI * 2;
 
   return Q;
 }
