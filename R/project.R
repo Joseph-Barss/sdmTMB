@@ -349,7 +349,13 @@ move_proj_to_tmbdat <- function(x, object, newdata, called_by_simulate = FALSE, 
   ## x$A_st <- x$proj_mesh
   ## .cpp uses unique locations in projection but not in fitting:
   xy_cols <- object$spde$xy_cols
-  proj_mesh <- fmesher::fm_basis(object$spde$mesh, loc = as.matrix(newdata[, xy_cols, drop = FALSE]))
+  if(ncol(object$spde$A_st) != object$spde$mesh$n) {
+    proj_mesh <- dirichlet.A(object$spde$mesh,
+                             loc = as.matrix(newdata[, xy_cols, drop = FALSE]))
+  } else {
+    proj_mesh <- fmesher::fm_basis(object$spde$mesh,
+                                   loc = as.matrix(newdata[, xy_cols, drop = FALSE]))
+  }
   x$A_st <- proj_mesh
   x$A_spatial_index <- seq_len(dim(proj_mesh)[1]) - 1L
   x$X_threshold <- x$proj_X_threshold

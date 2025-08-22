@@ -22,6 +22,8 @@
 #'   Distance to extend non-convex hull from data.
 #' @param concave If specified, passed to [fmesher::fm_nonconvex_hull()].
 #'   "Minimum allowed reentrant curvature". Defaults to `convex`.
+#' @param dirichlet Logical: use a Dirichlet boundary condition rather than a
+#'  Neumann boundary condition?
 #' @param ... Other arguments to pass to `fmesher_func`. Common arguments
 #'   include `offset` and `max.edge`. See examples below.
 #'
@@ -73,6 +75,7 @@ make_mesh <- function(data, xy_cols,
                       mesh = NULL,
                       fmesher_func = fmesher::fm_rcdt_2d_inla,
                       convex = NULL, concave = convex,
+                      dirichlet = FALSE,
                       ...) {
 
   if (nrow(data) == 0L) {
@@ -161,12 +164,18 @@ make_mesh <- function(data, xy_cols,
     knots <- list()
     loc_centers <- NA
   }
-  # spde_inla <- INLA::inla.spde2.matern(mesh)
-  spde <- fmesher::fm_fem(mesh)
-  # identical(spde2$c0, spde_inla$param.inla$M0)
-  # identical(as.matrix(spde2$g1), as.matrix(spde_inla$param.inla$M1))
-  # identical(as.matrix(spde2$g2), as.matrix(spde_inla$param.inla$M2))
-  A <- fmesher::fm_basis(mesh, loc = loc_xy)
+
+  if(dirichlet == TRUE){
+    spde <- dirichlet.fem(mesh)
+    A <- dirichlet.A(mesh, loc = loc_xy)
+  } else {
+    # spde_inla <- INLA::inla.spde2.matern(mesh)
+    spde <- fmesher::fm_fem(mesh)
+    # identical(spde2$c0, spde_inla$param.inla$M0)
+    # identical(as.matrix(spde2$g1), as.matrix(spde_inla$param.inla$M1))
+    # identical(as.matrix(spde2$g2), as.matrix(spde_inla$param.inla$M2))
+    A <- fmesher::fm_basis(mesh, loc = loc_xy)
+  }
 
   fake_data <- data
   fake_data[["sdm_spatial_id"]] <- seq(1, nrow(fake_data))
@@ -236,8 +245,8 @@ plot.sdmTMBmesh <- function(x, ...) {
 }
 
 # from TMB examples repository:
-make_anisotropy_spde <- function(spde, anistropy = TRUE) {
-  if (anistropy) {
+make_anisotropy_spde <- function(spde, anisotropy = TRUE) {
+  if (anisotropy) {
     inla_mesh <- spde$mesh
     Dset <- 1:2
     inla_mesh <- spde$mesh
@@ -292,3 +301,28 @@ make_barrier_spde <- function(spde) {
   list(C0 = C0, C1 = C1, D0 = D0, D1 = D1, I = .I)
 }
 
+dirichlet.mask <- function(mesh)
+{
+  mask <- rep(TRUE, mesh$n)
+  mask[unique(mesh$segm$bnd$idx)] <- FALSE
+  mask
+}
+
+dirichlet.fem <- function(mesh, order=2)
+{
+  fem <- fmesher::fm_fem(mesh, order = order)
+  mask <- dirichlet.mask(mesh)
+  fem$c0 <- fem$c0[mask,mask,drop=FALSE]
+  fem$c1 <- fem$c1[mask,mask,drop=FALSE]
+  for (idx in seq_len(order)) {
+    fem[[paste("g", idx, sep = "")]] <-
+      fem[[paste("k", idx, sep = "")]][mask,mask,drop=FALSE]
+  }
+  fem
+}
+
+dirichlet.A <- function(mesh, ...)
+{
+  A <- fmesher::fm_basis(mesh, ...)
+  A[, dirichlet.mask(mesh), drop=FALSE]
+}

@@ -1010,7 +1010,7 @@ sdmTMB <- function(
     X_rw_ik <- matrix(0, nrow = nrow(data), ncol = 1)
   }
 
-  n_s <- nrow(spde$mesh$loc)
+  n_s <- ncol(spde$A_st)
 
   barrier <- "spde_barrier" %in% names(spde)
   if (barrier && anisotropy) {
@@ -1019,6 +1019,10 @@ sdmTMB <- function(
   }
   if (any(c(!is.na(priors$matern_s[1:2]), !is.na(priors$matern_st[1:2]))) && anisotropy) {
     cli_warn("Using PC Matern priors; therefore, anistropy will be disabled.")
+    anisotropy <- FALSE
+  }
+  if (ncol(spde$A_st) != spde$mesh$n && anisotropy) {
+    cli_warn("Using a mesh with a Dirichlet boundary condition; therefore, anistropy will be disabled.")
     anisotropy <- FALSE
   }
 

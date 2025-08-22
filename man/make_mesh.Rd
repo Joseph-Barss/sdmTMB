@@ -16,6 +16,7 @@ make_mesh(
   fmesher_func = fmesher::fm_rcdt_2d_inla,
   convex = NULL,
   concave = convex,
+  dirichlet = FALSE,
   ...
 )
 
@@ -51,6 +52,9 @@ Distance to extend non-convex hull from data.}
 
 \item{concave}{If specified, passed to \code{\link[fmesher:fm_nonconvex_hull]{fmesher::fm_nonconvex_hull()}}.
 "Minimum allowed reentrant curvature". Defaults to \code{convex}.}
+
+\item{dirichlet}{Logical: use a Dirichlet boundary condition rather than a
+Neumann boundary condition?}
 
 \item{...}{Passed to \code{\link[graphics:plot.default]{graphics::plot()}}.}
 
